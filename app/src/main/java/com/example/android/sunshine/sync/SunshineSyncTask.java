@@ -18,6 +18,11 @@ package com.example.android.sunshine.sync;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -28,15 +33,18 @@ import com.example.android.sunshine.data.WeatherContract;
 import com.example.android.sunshine.utilities.NetworkUtils;
 import com.example.android.sunshine.utilities.NotificationUtils;
 import com.example.android.sunshine.utilities.OpenWeatherJsonUtils;
+import com.example.android.sunshine.utilities.SunshineWeatherUtils;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
+import java.io.ByteArrayOutputStream;
 import java.net.URL;
 
 public class SunshineSyncTask {
@@ -124,7 +132,7 @@ public class SunshineSyncTask {
                 /*
                  * Now we send our Data to our Wear Device
                  */
-                sendDataToWear(weatherValues, getGoogleApiClient(context));
+                sendDataToWear(weatherValues, getGoogleApiClient(context), context.getResources());
 
                 /*
                  * Finally, after we insert data into the ContentProvider, determine whether or not
@@ -164,7 +172,7 @@ public class SunshineSyncTask {
         }
     }
 
-    private static void sendDataToWear(ContentValues[] weatherValues, GoogleApiClient googleApiClient) {
+    private static void sendDataToWear(ContentValues[] weatherValues, GoogleApiClient googleApiClient, Resources resources) {
 
          /* Get the min temperature, max temparature, and weather conditions for today*/
         ContentValues todayWeatherValues = weatherValues[0];
@@ -180,7 +188,9 @@ public class SunshineSyncTask {
         dataMap = putDataMapRequest.getDataMap();
         dataMap.putInt("MIN_TEMP", minTemp);
         dataMap.putInt("MAX_TEMP", maxTemp);
-        dataMap.putInt("WEATHER_ID", weatherId);
+
+        Bitmap weatherIcon = drawableToBitmap(resources.getDrawable(SunshineWeatherUtils.getLargeArtResourceIdForWeatherCondition(weatherId)));
+        dataMap.putAsset("WEATHER_ICON", createAssetFromBitmap(weatherIcon));
 
         putDataRequest = putDataMapRequest.asPutDataRequest();
         putDataMapRequest.setUrgent();
@@ -195,4 +205,25 @@ public class SunshineSyncTask {
                             }
                         });
     }
+
+    static Asset createAssetFromBitmap(Bitmap bitmap) {
+        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream);
+        return Asset.createFromBytes(byteStream.toByteArray());
+    }
+
+    static Bitmap drawableToBitmap(Drawable drawable) {
+
+        if (drawable instanceof BitmapDrawable) {
+            return ((BitmapDrawable) drawable).getBitmap();
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
+    }
+
 }
