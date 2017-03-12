@@ -18,6 +18,9 @@ package com.example.android.sunshine.sync;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.format.DateUtils;
 
 import com.example.android.sunshine.data.SunshinePreferences;
@@ -25,10 +28,50 @@ import com.example.android.sunshine.data.WeatherContract;
 import com.example.android.sunshine.utilities.NetworkUtils;
 import com.example.android.sunshine.utilities.NotificationUtils;
 import com.example.android.sunshine.utilities.OpenWeatherJsonUtils;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.Wearable;
 
 import java.net.URL;
 
 public class SunshineSyncTask {
+
+    private static GoogleApiClient mGoogleApiClient;
+
+    static GoogleApiClient getGoogleApiClient(Context context) {
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(context)
+                    .addApi(Wearable.API)
+                    .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                        @Override
+                        public void onConnected(@Nullable Bundle bundle) {
+                            //STUB
+                        }
+
+                        @Override
+                        public void onConnectionSuspended(int i) {
+                            //STUB
+                        }
+                    })
+                    .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+                        @Override
+                        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+                            //STUB
+                        }
+                    })
+                    .build();
+
+            mGoogleApiClient.connect();
+        }
+
+        return mGoogleApiClient;
+
+    }
 
     /**
      * Performs the network request for updated weather, parses the JSON from that request, and
@@ -39,6 +82,7 @@ public class SunshineSyncTask {
      * @param context Used to access utility methods and the ContentResolver
      */
     synchronized public static void syncWeather(Context context) {
+
 
         try {
             /*
@@ -76,6 +120,12 @@ public class SunshineSyncTask {
                         WeatherContract.WeatherEntry.CONTENT_URI,
                         weatherValues);
 
+
+                /*
+                 * Now we send our Data to our Wear Device
+                 */
+                sendDataToWear(weatherValues, getGoogleApiClient(context));
+
                 /*
                  * Finally, after we insert data into the ContentProvider, determine whether or not
                  * we should notify the user that the weather has been refreshed.
@@ -112,5 +162,37 @@ public class SunshineSyncTask {
             /* Server probably invalid */
             e.printStackTrace();
         }
+    }
+
+    private static void sendDataToWear(ContentValues[] weatherValues, GoogleApiClient googleApiClient) {
+
+         /* Get the min temperature, max temparature, and weather conditions for today*/
+        ContentValues todayWeatherValues = weatherValues[0];
+        int minTemp = Math.round(todayWeatherValues.getAsFloat(WeatherContract.WeatherEntry.COLUMN_MIN_TEMP));
+        int maxTemp = Math.round(todayWeatherValues.getAsFloat(WeatherContract.WeatherEntry.COLUMN_MAX_TEMP));
+        int weatherId = todayWeatherValues.getAsInteger(WeatherContract.WeatherEntry.COLUMN_WEATHER_ID);
+
+
+        PutDataMapRequest putDataMapRequest;
+        PutDataRequest putDataRequest;
+        DataMap dataMap;
+        putDataMapRequest = PutDataMapRequest.create("/sunshine-weather");
+        dataMap = putDataMapRequest.getDataMap();
+        dataMap.putInt("MIN_TEMP", minTemp);
+        dataMap.putInt("MAX_TEMP", maxTemp);
+        dataMap.putInt("WEATHER_ID", weatherId);
+
+        putDataRequest = putDataMapRequest.asPutDataRequest();
+        putDataMapRequest.setUrgent();
+
+        Wearable.DataApi
+                .putDataItem(googleApiClient, putDataRequest)
+                .setResultCallback(
+                        new ResultCallback<DataApi.DataItemResult>() {
+                            @Override
+                            public void onResult(@NonNull DataApi.DataItemResult result) {
+                                //STUB
+                            }
+                        });
     }
 }

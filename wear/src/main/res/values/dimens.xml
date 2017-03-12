@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="digital_line_height">25dp</dimen>
+    <dimen name="divider_margin">8dp</dimen>
+    <dimen name="divider_width">38dp</dimen>
+    <dimen name="time_text_size">38dp</dimen>
+    <dimen name="date_text_size">20dp</dimen>
+    <dimen name="weather_text_size">24dp</dimen>
+    <dimen name="margin_weather">8dp</dimen>
+</resources>

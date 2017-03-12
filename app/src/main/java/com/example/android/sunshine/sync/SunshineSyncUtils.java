@@ -34,13 +34,8 @@ import java.util.concurrent.TimeUnit;
 
 public class SunshineSyncUtils {
 
-    /*
-     * Interval at which to sync with the weather. Use TimeUnit for convenience, rather than
-     * writing out a bunch of multiplication ourselves and risk making a silly mistake.
-     */
-    private static final int SYNC_INTERVAL_HOURS = 3;
-    private static final int SYNC_INTERVAL_SECONDS = (int) TimeUnit.HOURS.toSeconds(SYNC_INTERVAL_HOURS);
-    private static final int SYNC_FLEXTIME_SECONDS = SYNC_INTERVAL_SECONDS / 3;
+    private static final int SYNC_INTERVAL_SECONDS = (int) TimeUnit.HOURS.toSeconds(3);
+    private static final int SYNC_FLEXTIME_SECONDS = (int) TimeUnit.HOURS.toSeconds(1);
 
     private static boolean sInitialized;
 
@@ -48,8 +43,8 @@ public class SunshineSyncUtils {
 
     /**
      * Schedules a repeating sync of Sunshine's weather data using FirebaseJobDispatcher.
-     * @param context Context used to create the GooglePlayDriver that powers the
-     *                FirebaseJobDispatcher
+     *
+     * @param context Context used to create the GooglePlayDriver that powers the FirebaseJobDispatcher
      */
     static void scheduleFirebaseJobDispatcherSync(@NonNull final Context context) {
 
@@ -86,8 +81,7 @@ public class SunshineSyncUtils {
                  * guaranteed, but is more of a guideline for FirebaseJobDispatcher to go off of.
                  */
                 .setTrigger(Trigger.executionWindow(
-                        SYNC_INTERVAL_SECONDS,
-                        SYNC_INTERVAL_SECONDS + SYNC_FLEXTIME_SECONDS))
+                        SYNC_INTERVAL_SECONDS, SYNC_INTERVAL_SECONDS + SYNC_FLEXTIME_SECONDS))
                 /*
                  * If a Job with the tag with provided already exists, this new job will replace
                  * the old one.
@@ -99,12 +93,12 @@ public class SunshineSyncUtils {
         /* Schedule the Job with the dispatcher */
         dispatcher.schedule(syncSunshineJob);
     }
+
     /**
      * Creates periodic sync tasks and checks to see if an immediate sync is required. If an
      * immediate sync is required, this method will take care of making sure that sync occurs.
      *
-     * @param context Context that will be passed to other methods and used to access the
-     *                ContentResolver
+     * @param context Context that will be passed to other methods and used to access the ContentResolver
      */
     synchronized public static void initialize(@NonNull final Context context) {
 
