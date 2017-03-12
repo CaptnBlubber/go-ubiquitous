@@ -77,10 +77,10 @@ public class SunshineWatchfaceService extends CanvasWatchFaceService {
      */
     private static final int MSG_UPDATE_TIME = 0;
 
-    private String mHighTemperature = "37°";
-    private String mLowTemperature = "13°";
-    private int mWeatherDrawableResource = SunshineWeatherUtils.getLargeArtResourceIdForWeatherCondition(500);
-    private boolean mHasWeatherData = true;
+    private String mHighTemperature;
+    private String mLowTemperature;
+    private int mWeatherDrawableResource;
+    private boolean mHasWeatherData = false;
 
     @Override
     public Engine onCreateEngine() {
